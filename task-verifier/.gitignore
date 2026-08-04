@@ -1,0 +1,32 @@
+# Entornos virtuales
+backend/venv/
+backend/.venv/
+
+# Variables de entorno reales
+.env
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+
+# Docker
+*.log
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,36 @@
+# Real env files — every service has a committed .env.example / .env.examples
+# instead. Never commit actual secrets.
+.env
+**/.env
+!**/.env.example
+!**/.env.examples
+
+# Python
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+**/venv/
+**/.venv/
+
+# Node
+**/node_modules/
+frontend/dist/
+**/dist/
+**/tsconfig.tsbuildinfo
+
+# App data
+task-verifier/backend/uploads/*
+!task-verifier/backend/uploads/.gitkeep
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+*.log
+
+# Claude Code local settings
+.claude/settings.local.json

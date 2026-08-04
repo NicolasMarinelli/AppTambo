@@ -1,0 +1,120 @@
+services:
+
+  # ── Postgres compartido ───────────────────────────────────────────
+  # Una única instancia para ambos microservicios. Cada uno mantiene su
+  # propio rol y su propia base de datos (creados por infra/postgres-init),
+  # así que a nivel aplicación siguen tan aislados como si tuvieran su
+  # propio contenedor — solo comparten el proceso de Postgres.
+  db:
+    image: postgres:16-alpine
+    container_name: appcami_db
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      TASK_VERIFIER_DB_USER: ${TASK_VERIFIER_DB_USER}
+      TASK_VERIFIER_DB_PASSWORD: ${TASK_VERIFIER_DB_PASSWORD}
+      TASK_VERIFIER_DB_NAME: ${TASK_VERIFIER_DB_NAME}
+      TAMBO_DB_USER: ${TAMBO_DB_USER}
+      TAMBO_DB_PASSWORD: ${TAMBO_DB_PASSWORD}
+      TAMBO_DB_NAME: ${TAMBO_DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./infra/postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Task Verifier ──────────────────────────────────────────────────
+  task-verifier-backend:
+    build:
+      context: ./task-verifier/backend
+      dockerfile: Dockerfile
+    container_name: appcami_task_verifier_backend
+    restart: unless-stopped
+    env_file:
+      - ./task-verifier/backend/.env
+    volumes:
+      - ./task-verifier/backend:/app
+      - task_verifier_uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  task-verifier-frontend:
+    build:
+      context: ./task-verifier/frontend
+      dockerfile: Dockerfile
+    container_name: appcami_task_verifier_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./task-verifier/frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - task-verifier-backend
+
+  # ── Tambo ──────────────────────────────────────────────────────────
+  tambo-backend:
+    build:
+      context: ./tambo/backend
+      dockerfile: Dockerfile
+    container_name: appcami_tambo_backend
+    restart: unless-stopped
+    env_file:
+      - ./tambo/backend/.env
+    volumes:
+      - ./tambo/backend:/app
+    ports:
+      # Host 8001 -> container 8000: task-verifier-backend already owns
+      # host port 8000. Internally tambo still just listens on 8000.
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  tambo-frontend:
+    build:
+      context: ./tambo/frontend
+      dockerfile: Dockerfile
+    container_name: appcami_tambo_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8001
+    volumes:
+      - ./tambo/frontend:/app
+      - /app/node_modules
+    ports:
+      # Host 5174 -> container 5173: task-verifier-frontend already owns
+      # host port 5173.
+      - "5174:5173"
+    depends_on:
+      - tambo-backend
+
+  # ── Landing hub ────────────────────────────────────────────────────
+  # Página estática mínima con dos links, uno por microservicio. No
+  # comparte auth ni estado con ninguno de los dos — es solo un menú.
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    container_name: appcami_landing
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - task-verifier-frontend
+      - tambo-frontend
+
+volumes:
+  db_data:
+  task_verifier_uploads:
