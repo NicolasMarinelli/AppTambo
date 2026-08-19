@@ -210,10 +210,12 @@ main h2 {
   padding: 1.5rem;
 }
 
-.login-hero svg {
+.login-hero img {
   width: 100%;
   max-width: 260px;
   height: auto;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
 }
 
 .login-form {
@@ -517,7 +519,7 @@ td a:hover {
     padding: 1.5rem 1.5rem 0;
   }
 
-  .login-hero svg {
+  .login-hero img {
     max-width: 170px;
   }
 
