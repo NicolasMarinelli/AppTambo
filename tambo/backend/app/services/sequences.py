@@ -27,6 +27,39 @@ def next_sequence_value(db: Session, nombre: SequenceName) -> int:
     return counter.ultimo_valor
 
 
+def peek_sequence_value(db: Session, nombre: SequenceName) -> int:
+    """Read-only preview of the next value a sequence counter would hand out,
+    WITHOUT incrementing it (no lock, no side effect). Used to prefill the
+    "alta de ternero" form with a suggested caravana/SENASA before the user
+    saves anything. It's a suggestion, not a reservation: the real, atomic
+    assignment still happens at save time via next_sequence_value (or via
+    set_sequence_watermark below, if the user overrides the suggestion) — so
+    a stale preview from a race between two concurrent creates can't cause a
+    collision, just a possibly-outdated suggestion the user can still edit.
+    """
+    counter = db.query(SequenceCounter).filter(SequenceCounter.nombre == nombre).one()
+    return counter.ultimo_valor + 1
+
+
+def set_sequence_watermark(db: Session, nombre: SequenceName, value: int) -> None:
+    """Ensures a sequence counter never again hands out a value <= `value`.
+
+    Used when a user manually overrides an auto-suggested caravana/SENASA
+    with a higher number (e.g. to match a physical tag already in hand) —
+    without this, a later auto-assigned number could collide with the one
+    just entered by hand.
+    """
+    counter = (
+        db.query(SequenceCounter)
+        .filter(SequenceCounter.nombre == nombre)
+        .with_for_update()
+        .one()
+    )
+    if value > counter.ultimo_valor:
+        counter.ultimo_valor = value
+        db.flush()
+
+
 def numbering_impact_of_change(old_tipo: TipoCria, new_tipo: TipoCria) -> tuple[bool, bool]:
     """Returns (caravana_changes, senasa_changes): whether editing tipo_cria from
     old_tipo to new_tipo requires assigning or clearing caravana/SENASA numbers.

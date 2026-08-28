@@ -18,6 +18,8 @@ services:
       TAMBO_DB_USER: ${TAMBO_DB_USER}
       TAMBO_DB_PASSWORD: ${TAMBO_DB_PASSWORD}
       TAMBO_DB_NAME: ${TAMBO_DB_NAME}
+      LABORATORIO_DB_USER: ${LABORATORIO_DB_USER}
+      LABORATORIO_DB_PASSWORD: ${LABORATORIO_DB_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./infra/postgres-init:/docker-entrypoint-initdb.d:ro
@@ -100,9 +102,54 @@ services:
     depends_on:
       - tambo-backend
 
+  # ── Laboratorio ────────────────────────────────────────────────────
+  # A diferencia de task-verifier/tambo, no tiene base de datos propia:
+  # se conecta a la base de tambo ("cami") con un rol separado (ver
+  # infra/postgres-init). Por eso depende de tambo-backend además de db —
+  # así, en un arranque desde cero, la tabla users ya existe (por las
+  # migraciones de tambo) antes de que alguien intente loguearse acá.
+  laboratorio-backend:
+    build:
+      context: ./laboratorio/backend
+      dockerfile: Dockerfile
+    container_name: appcami_laboratorio_backend
+    restart: unless-stopped
+    env_file:
+      - ./laboratorio/backend/.env
+    volumes:
+      - ./laboratorio/backend:/app
+    ports:
+      # Host 8002 -> container 8000: 8000 y 8001 ya están tomados por
+      # task-verifier y tambo. Internamente sigue escuchando en 8000.
+      - "8002:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      tambo-backend:
+        condition: service_started
+
+  laboratorio-frontend:
+    build:
+      context: ./laboratorio/frontend
+      dockerfile: Dockerfile
+    container_name: appcami_laboratorio_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8002
+    volumes:
+      - ./laboratorio/frontend:/app
+      - /app/node_modules
+    ports:
+      # Host 5175 -> container 5173: 5173 y 5174 ya están tomados.
+      - "5175:5173"
+    depends_on:
+      - laboratorio-backend
+
   # ── Landing hub ────────────────────────────────────────────────────
-  # Página estática mínima con dos links, uno por microservicio. No
-  # comparte auth ni estado con ninguno de los dos — es solo un menú.
+  # Página estática mínima con un link por microservicio. No comparte auth
+  # ni estado con ninguno — es solo un menú (laboratorio es la excepción a
+  # nivel apps, no a nivel landing: landing sigue sin saber quién está
+  # logueado en ninguna de las tres).
   landing:
     build:
       context: ./landing
@@ -114,6 +161,7 @@ services:
     depends_on:
       - task-verifier-frontend
       - tambo-frontend
+      - laboratorio-frontend
 
 volumes:
   db_data:

@@ -21,6 +21,21 @@ class CalfRecordBase(BaseModel):
     peso_nacimiento_kg: float = Field(..., description=f"Peso al nacer en kg (entre {PESO_MIN_KG} y {PESO_MAX_KG})")
     tipo_cria: TipoCria = Field(..., description="Resultado del parto: macho/hembra vivo/muerto")
 
+    caravana_asignada: int | None = Field(
+        None,
+        ge=1,
+        description=(
+            "Caravana asignada. Si se omite (o el tipo de cría no aplica), se autocompleta con la "
+            "próxima disponible; el campo es editable para corregirla a mano (ej. matchear una caravana "
+            "física ya colocada). Se valida que no colisione con la de otro ternero."
+        ),
+    )
+    numero_senasa: int | None = Field(
+        None,
+        ge=1,
+        description="Número SENASA asignado. Mismo criterio de autocompletado/edición que caravana_asignada.",
+    )
+
     calostro_tipo: CalostroTipo = Field(..., description="Tipo de calostro suministrado")
     calostro_brix: float = Field(..., description=f"Grados Brix medidos (entre {BRIX_MIN} y {BRIX_MAX})")
     calostro_cantidad_litros: float = Field(..., gt=0, description="Cantidad de calostro/leche tomada, en litros")
@@ -70,13 +85,16 @@ class CalfRecordUpdate(CalfRecordBase):
 
 class CalfRecordOut(CalfRecordBase):
     id: int
-    caravana_asignada: int | None
-    numero_senasa: int | None
     created_by: int
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class NextNumberingOut(BaseModel):
+    caravana_asignada: int | None = Field(None, description="Sugerencia de próxima caravana; null si el tipo de cría no aplica")
+    numero_senasa: int | None = Field(None, description="Sugerencia de próximo número SENASA; null si el tipo de cría no aplica")
 
 
 class NumberingWarning(BaseModel):

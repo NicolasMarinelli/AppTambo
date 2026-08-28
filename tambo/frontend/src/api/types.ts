@@ -47,11 +47,18 @@ export interface CalfRecordInput {
   mellizo: boolean;
   peso_nacimiento_kg: number;
   tipo_cria: TipoCria;
+  caravana_asignada: number | null;
+  numero_senasa: number | null;
   calostro_tipo: CalostroTipo;
   calostro_brix: number;
   calostro_cantidad_litros: number;
   calostro_bolsa_numero: string | null;
   confirm_numbering_change?: boolean;
+}
+
+export interface NextNumbering {
+  caravana_asignada: number | null;
+  numero_senasa: number | null;
 }
 
 export interface NumberingWarning {

@@ -3,6 +3,8 @@ from app.services.sequences import (
     assign_numbering_for_tipo_cria,
     next_sequence_value,
     numbering_impact_of_change,
+    peek_sequence_value,
+    set_sequence_watermark,
 )
 
 
@@ -86,3 +88,32 @@ def test_numbering_impact_both_dead_no_change():
     caravana_changes, senasa_changes = numbering_impact_of_change(TipoCria.macho_muerto, TipoCria.hembra_muerta)
     assert not caravana_changes
     assert not senasa_changes
+
+
+def test_peek_sequence_value_does_not_increment(db_session):
+    # Llamarlo varias veces seguidas tiene que devolver siempre lo mismo —
+    # a diferencia de next_sequence_value, no consume el contador.
+    assert peek_sequence_value(db_session, SequenceName.caravana_macho) == 1
+    assert peek_sequence_value(db_session, SequenceName.caravana_macho) == 1
+
+    next_sequence_value(db_session, SequenceName.caravana_macho)
+    assert peek_sequence_value(db_session, SequenceName.caravana_macho) == 2
+
+
+def test_set_sequence_watermark_raises_future_values(db_session):
+    set_sequence_watermark(db_session, SequenceName.caravana_macho, 10)
+    assert next_sequence_value(db_session, SequenceName.caravana_macho) == 11
+
+
+def test_set_sequence_watermark_ignores_lower_values(db_session):
+    next_sequence_value(db_session, SequenceName.caravana_macho)  # ultimo_valor = 1
+    next_sequence_value(db_session, SequenceName.caravana_macho)  # ultimo_valor = 2
+
+    set_sequence_watermark(db_session, SequenceName.caravana_macho, 1)  # menor al actual: no-op
+
+    assert next_sequence_value(db_session, SequenceName.caravana_macho) == 3
+
+
+def test_set_sequence_watermark_does_not_affect_other_sequences(db_session):
+    set_sequence_watermark(db_session, SequenceName.caravana_macho, 50)
+    assert next_sequence_value(db_session, SequenceName.caravana_hembra) == 1

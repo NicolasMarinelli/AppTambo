@@ -4,8 +4,11 @@ import { Link } from "react-router-dom";
 import { apiClient } from "../api/client";
 import type { CalfRecord, TipoCria } from "../api/types";
 import { TIPO_CRIA_LABELS } from "../api/types";
+import { useAuth } from "../context/AuthContext";
 
 export function CalfRecordsListPage() {
+  const { user } = useAuth();
+  const puedeCargar = user?.role === "admin" || user?.role === "operario";
   const [records, setRecords] = useState<CalfRecord[]>([]);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
@@ -35,6 +38,15 @@ export function CalfRecordsListPage() {
   return (
     <div>
       <h2>Listado de terneros</h2>
+
+      {puedeCargar && (
+        <Link to="/nuevo" className="btn-primary btn-cargar-ternero">
+          + Cargar ternero
+        </Link>
+      )}
+
+      {user?.role === "operario" && <p className="list-scope-note">Mostrando solo los terneros que cargaste vos.</p>}
+
       <form
         className="filters"
         onSubmit={(e) => {
@@ -89,13 +101,13 @@ export function CalfRecordsListPage() {
           <tbody>
             {records.map((record) => (
               <tr key={record.id}>
-                <td>{record.fecha_nacimiento}</td>
-                <td>{record.madre_caravana ?? "-"}</td>
-                <td>{TIPO_CRIA_LABELS[record.tipo_cria]}</td>
-                <td>{record.caravana_asignada ?? "-"}</td>
-                <td>{record.numero_senasa ?? "-"}</td>
-                <td>{record.peso_nacimiento_kg}</td>
-                <td>
+                <td data-label="Fecha">{record.fecha_nacimiento}</td>
+                <td data-label="Madre">{record.madre_caravana ?? "-"}</td>
+                <td data-label="Tipo de cría">{TIPO_CRIA_LABELS[record.tipo_cria]}</td>
+                <td data-label="Caravana">{record.caravana_asignada ?? "-"}</td>
+                <td data-label="SENASA">{record.numero_senasa ?? "-"}</td>
+                <td data-label="Peso (kg)">{record.peso_nacimiento_kg}</td>
+                <td data-label="">
                   <Link to={`/editar/${record.id}`}>Editar</Link>
                 </td>
               </tr>

@@ -14,6 +14,7 @@
       --border: #e2e2e0;
       --accent-tv: #2563eb;
       --accent-tambo: #16a34a;
+      --accent-lab: #7c3aed;
       --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
     }
     @media (prefers-color-scheme: dark) {
@@ -65,6 +66,7 @@
     }
     .card.tv .dot { background: var(--accent-tv); }
     .card.tambo .dot { background: var(--accent-tambo); }
+    .card.lab .dot { background: var(--accent-lab); }
     .card h2 { font-size: 1.15rem; margin: 0.75rem 0 0.4rem; }
     .card p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
     .card .go {
@@ -72,6 +74,7 @@
     }
     .card.tv .go { color: var(--accent-tv); }
     .card.tambo .go { color: var(--accent-tambo); }
+    .card.lab .go { color: var(--accent-lab); }
     footer { text-align: center; margin-top: 2rem; color: var(--muted); font-size: 0.8rem; }
     code {
       background: var(--border); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em;
@@ -82,7 +85,7 @@
   <div class="wrap">
     <header>
       <h1>AppCami</h1>
-      <p>Dos microservicios independientes, un mismo punto de entrada.</p>
+      <p>Microservicios independientes, un mismo punto de entrada.</p>
     </header>
     <div class="cards">
       <a class="card tv" href="http://localhost:5173" target="_self">
@@ -97,10 +100,18 @@
         <p>Registro de partos, asignación de caravana/SENASA y control de calostrado.</p>
         <span class="go">Abrir app →</span>
       </a>
+      <a class="card lab" href="http://localhost:5175" target="_self">
+        <span class="dot"></span><strong>Laboratorio</strong>
+        <h2>Evaluación de cultivos por IA</h2>
+        <p>Carga de muestras, veredicto asistido por IA con visión y validación humana. Usa el mismo login que Tambo.</p>
+        <span class="go">Abrir app →</span>
+      </a>
     </div>
     <footer>
-      Cada app corre en su propio contenedor con su propio login — este menú
-      solo enlaza, no comparte sesión. Backends en <code>:8000</code> y <code>:8001</code>.
+      Cada app corre en su propio contenedor — este menú solo enlaza, no
+      comparte sesión ni estado. Excepción: Laboratorio reutiliza el login
+      de Tambo (mismo usuario y contraseña). Backends en <code>:8000</code>,
+      <code>:8001</code> y <code>:8002</code>.
     </footer>
   </div>
 </body>
